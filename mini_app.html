@@ -1,254 +1,172 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini App Penukaran</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-        .container {
-            max-width: 400px;
-            padding: 2rem;
-            background-color: var(--tg-theme-secondary-bg-color);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .input-group {
-            margin-bottom: 1rem;
-            text-align: left;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid var(--tg-theme-text-color);
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-        }
-        .info-box {
-            padding: 1rem;
-            background-color: rgba(0, 136, 204, 0.1);
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-        button {
-            width: 100%;
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-weight: 600;
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.2s;
-        }
-        button:hover {
-            opacity: 0.8;
-            transform: translateY(-2px);
-        }
-        .bank-option {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem;
-            border: 1px solid var(--tg-theme-text-color);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .bank-option.selected {
-            background-color: rgba(0, 136, 204, 0.2);
-        }
-        .bank-icon {
-            width: 24px;
-            height: 24px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1 class="text-2xl font-bold mb-4">Penukaran Crypto ke Rupiah</h1>
-        <p class="mb-6">Tukar aset digital Anda dengan mudah dan aman.</p>
-        
-        <div class="input-group">
-            <label for="rupiah-input">Jumlah Rupiah yang Anda Inginkan</label>
-            <input type="number" id="rupiah-input" placeholder="Contoh: 1000000" class="shadow-sm">
-        </div>
-        
-        <div class="info-box">
-            <p>Anda perlu membayar: <span id="crypto-amount" class="font-bold">0.00</span> TON</p>
-        </div>
-        
-        <!-- Pilihan bank dengan ikon -->
-        <div class="input-group">
-            <label>Pilih Bank</label>
-            <div class="flex flex-col space-y-2" id="bank-options">
-                <div class="bank-option" data-bank="BRI" data-digits="15">
-                    <img src="https://placehold.co/24x24/FFFFFF/000000?text=BRI" alt="BRI" class="bank-icon">
-                    <span>Bank Rakyat Indonesia (BRI)</span>
-                </div>
-                <div class="bank-option" data-bank="BCA" data-digits="10">
-                    <img src="https://placehold.co/24x24/FFFFFF/000000?text=BCA" alt="BCA" class="bank-icon">
-                    <span>Bank Central Asia (BCA)</span>
-                </div>
-                <div class="bank-option" data-bank="BNI" data-digits="16">
-                    <img src="https://placehold.co/24x24/FFFFFF/000000?text=BNI" alt="BNI" class="bank-icon">
-                    <span>Bank Negara Indonesia (BNI)</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="input-group">
-            <label for="bank-account-input">Nomor Rekening Bank</label>
-            <input type="text" id="bank-account-input" placeholder="Pilih bank terlebih dahulu" class="shadow-sm" disabled>
-        </div>
-        
-        <div class="input-group">
-            <label for="account-name-input">Nama Pemilik Rekening</label>
-            <input type="text" id="account-name-input" placeholder="Contoh: John Doe" class="shadow-sm">
-        </div>
-        
-        <button id="pay-button" disabled>Bayar dengan Telegram Wallet</button>
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+/>
+<link rel="stylesheet" href="style.css" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<header>
+  <div class="container">
+    <div class="header-content">
+      <div class="logo">
+        <img
+          src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='50' fill='%236c42f5' /><path d='M30 30 L70 30 L70 70 L30 70 Z' fill='none' stroke='white' stroke-width='8' /></svg>"
+          alt="Hachanger Logo"
+        />
+        <h1>RPChanger</h1>
+      </div>
+      <button class="wallet-connect">
+        <i class="fas fa-wallet"></i> Connect Wallet
+      </button>
     </div>
+  </div>
+</header>
 
-    <script>
-        // Memastikan Telegram Web App siap
-        Telegram.WebApp.ready();
+<main class="container">
+  <section class="hero">
+    <h2>RPchanger</h2>
+    <p>
+      Tukar Aset Digital Anda Ke IDR dengan Mudah dan Aman 
+    </p>
+  </section>
 
-        const rupiahInput = document.getElementById('rupiah-input');
-        const cryptoAmountSpan = document.getElementById('crypto-amount');
-        const bankOptionsDiv = document.getElementById('bank-options');
-        const bankAccountInput = document.getElementById('bank-account-input');
-        const accountNameInput = document.getElementById('account-name-input');
-        const payButton = document.getElementById('pay-button');
+  <section class="stats">
+    <div class="stat-card">
+      <i class="fas fa-exchange-alt"></i>
+      <h3>P2P</h3>
+      <p>Peer to Peer instan tanpa KYC</p>
+    </div>
+    <div class="stat-card">
+      <i class="fas fa-users"></i>
+      <h3>1K+</h3>
+      <p>Testimoni Positif</p>
+    </div>
+    <div class="stat-card">
+      <i class="fas fa-shield-alt"></i>
+      <h3>100%</h3>
+      <p>Jaminan Transaksi Jika Gagal Uang Kembali</p>
+    </div>
+    <div class="stat-card">
+      <i class="fas fa-bolt"></i>
+      <h3>< 25min</h3>
+      <p>Proses Cepat</p>
+    </div>
+  </section>
 
-        // URL SERVER KAMU
-        const serverUrl = 'https://telegram-crypto-app-zeta.vercel.app';
+  <section class="payment">
+    <h2 class="section-title">Tukar Aset Digital Sekarang</h2>
+    <div class="payment-form">
+      <div class="form-group">
+        <label for="amount">Jumlah Rupiah yang Anda Inginkan</label>
+        <input type="number" id="amount" placeholder="Masukkan jumlah Rupiah" min="10000" step="1000">
+        <span class="input-currency">IDR</span>
+      </div>
+      
+      <div class="conversion-result">
+        <p>Estimasi Crypto: <span id="crypto-amount">0</span> <span id="crypto-type">USDT</span></p>
+        <p class="conversion-rate">1 USDT = Rp 15,500</p>
+      </div>
+      
+      <div class="form-group">
+        <label for="crypto">Pilih Aset Digital</label>
+        <select id="crypto">
+          <option value="usdt" selected>Tether (USDT)</option>
+          <option value="btc">Bitcoin (BTC)</option>
+          <option value="eth">Ethereum (ETH)</option>
+          <option value="bnb">BNB (BNB)</option>
+          <option value="xrp">Ripple (XRP)</option>
+          <option value="ton">TON (TON)</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="bank">Pilih Bank Penerima</label>
+        <select id="bank">
+          <option value="" disabled selected>Pilih metode pembayaran</option>
+          <option value="bca">BCA</option>
+          <option value="bri">BRI</option>
+          <option value="mandiri">Mandiri</option>
+          <option value="bni">BNI</option>
+          <option value="jenius">Jenius</option>
+          <option value="ovo">OVO</option>
+          <option value="dana">DANA</option>
+          <option value="gopay">GoPay</option>
+          <option value="shopeepay">ShopeePay</option>
+          <option value="linkaja">LinkAja</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="account-number">Nomor Rekening/E-Wallet</label>
+        <input type="text" id="account-number" placeholder="Masukkan nomor rekening atau e-wallet">
+      </div>
+      
+      <div class="form-group">
+        <label for="account-name">Nama Pemilik Rekening</label>
+        <input type="text" id="account-name" placeholder="Masukkan nama pemilik rekening">
+      </div>
+      <div>
+      <button class="pay-btn">
+        <i class="fas fa-wallet"></i> Bayar Sekarang
+      </button>
+    </div>
+  </section>
 
-        // Mengatur exchange rate placeholder
-        const exchangeRate = 0.000005; // 1 Rupiah = 0.000005 TON
-        let selectedBank = null;
-        let requiredDigits = 0;
+  <section class="features">
+    <h2 class="section-title">Pelayanan Kami</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <i class="fas fa-coins"></i>
+        <h3>Semi Instant Payment</h3>
+        <p>
+          Kami berusaha untuk secepat mungkin memproses pesanan anda dalam waktu 2-20 menit, Kecuali kondisi yang overload biasa nya membutuhkan waktu 20-45 menit.
+        </p>
+      </div>
+      <div class="feature-card">
+        <i class="fas fa-user-shield"></i>
+        <h3>Komitmen</h3>
+        <p>
+          kami senantiasa menjaga kepercayaan pelanggan dengan memberi jaminan uang kembali jika transaksi anda gagal.
+        </p>
+      </div>
+      
+      <div class="feature-card">
+        <i class="fas fa-percentage"></i>
+        <h3>Minimum Order</h3>
+        <p>
+          Kami mengerti begitu sulit nya mencari Exchanger untuk memesan dengan jumlah kecil, Untuk itu kami memberikan solusi Minimal transaksi dengan jumlah kecil mulai dari 2 USD.
+        </p>
+      </div>
+      <div class="feature-card">
+        <i class="fas fa-bank"></i>
+        <h3>Pembayaran </h3>
+        <p>
+          Banyak pilihan pembayaran yang kami sediakan, mulai dari pembayaran keseluruh Bank dan Dompet Digital yang ada di indonesia.
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
 
-        rupiahInput.addEventListener('input', () => {
-            const rupiah = parseFloat(rupiahInput.value);
-            if (!isNaN(rupiah) && rupiah > 0) {
-                const cryptoAmount = rupiah * exchangeRate;
-                cryptoAmountSpan.textContent = cryptoAmount.toFixed(6);
-                checkButtonStatus();
-            } else {
-                cryptoAmountSpan.textContent = '0.00';
-                checkButtonStatus();
-            }
-        });
+<footer>
+  <div class="container">
+    <div class="footer-content">
+      <div class="social-links">
+        <a href="#"><i class="fab fa-email"></i></a>
+        <a href="#"><i class="fab fa-twitter"></i></a>
+        <a href="#"><i class="fab fa-discord"></i></a>
+        <a href="#"><i class="fab fa-medium"></i></a>
+      </div>
+      <div class="footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Help Center</a>
+        <a href="#">API Documentation</a>
+        <a href="#">Contact Us</a>
+      </div>
+      <p>© 2023 RPChanger. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
 
-        bankOptionsDiv.addEventListener('click', (event) => {
-            const selectedOption = event.target.closest('.bank-option');
-            if (selectedOption) {
-                // Menghapus pilihan sebelumnya
-                document.querySelectorAll('.bank-option').forEach(option => {
-                    option.classList.remove('selected');
-                });
-                // Menambahkan kelas 'selected' ke pilihan baru
-                selectedOption.classList.add('selected');
-                selectedBank = selectedOption.dataset.bank;
-                requiredDigits = parseInt(selectedOption.dataset.digits);
-                
-                bankAccountInput.disabled = false;
-                bankAccountInput.placeholder = `Masukkan ${requiredDigits} digit nomor rekening ${selectedBank}`;
-                bankAccountInput.maxLength = requiredDigits;
-                checkButtonStatus();
-            }
-        });
-
-        [rupiahInput, bankAccountInput, accountNameInput].forEach(input => {
-            input.addEventListener('input', checkButtonStatus);
-        });
-
-        function checkButtonStatus() {
-            const rupiah = parseFloat(rupiahInput.value);
-            const bankAccount = bankAccountInput.value;
-            const accountName = accountNameInput.value;
-
-            if (rupiah > 0 && selectedBank && bankAccount.length === requiredDigits && accountName.length > 0) {
-                payButton.disabled = false;
-            } else {
-                payButton.disabled = true;
-            }
-        }
-        
-        payButton.addEventListener('click', async () => {
-            const rupiah = parseFloat(rupiahInput.value);
-            const cryptoAmount = parseFloat(cryptoAmountSpan.textContent);
-            const bankAccount = bankAccountInput.value;
-            const accountName = accountNameInput.value;
-
-            if (isNaN(rupiah) || rupiah <= 0) {
-                return Telegram.WebApp.showAlert('Harap masukkan jumlah Rupiah yang valid.');
-            }
-            if (!bankAccount || bankAccount.length !== requiredDigits || !selectedBank) {
-                return Telegram.WebApp.showAlert(`Nomor rekening ${selectedBank} harus ${requiredDigits} digit.`);
-            }
-            if (!accountName) {
-                return Telegram.WebApp.showAlert('Harap isi nama pemilik rekening.');
-            }
-
-            try {
-                // Memanggil server kamu untuk membuat invoice
-                const response = await fetch(`${serverUrl}/createInvoice`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        amount: Math.round(cryptoAmount * 100), // Telegram menggunakan satuan terkecil (contoh: sen)
-                        currency: 'XTR', // Placeholder mata uang
-                        description: `Pembayaran untuk ${rupiah} Rupiah`,
-                        bankDetails: {
-                            bankName: selectedBank,
-                            accountNumber: bankAccount,
-                            accountName: accountName
-                        }
-                    })
-                });
-
-                const data = await response.json();
-                if (data.invoiceUrl) {
-                    // Membuka jendela pembayaran Telegram Wallet
-                    Telegram.WebApp.openInvoice(data.invoiceUrl, (status) => {
-                        if (status === 'paid') {
-                            Telegram.WebApp.showAlert('Pembayaran berhasil! Silakan tunggu konfirmasi transfer Rupiah.');
-                        } else {
-                            Telegram.WebApp.showAlert('Pembayaran dibatalkan atau gagal. Silakan coba lagi.');
-                        }
-                    });
-                } else {
-                    Telegram.WebApp.showAlert('Gagal mendapatkan link pembayaran.');
-                }
-            } catch (error) {
-                console.error('Error saat memanggil server:', error);
-                Telegram.WebApp.showAlert('Terjadi kesalahan. Silakan coba lagi nanti.');
-            }
-        });
-    </script>
-</body>
-</html>
+<script src="script.js"></script>
