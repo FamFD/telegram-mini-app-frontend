@@ -3103,6 +3103,7 @@ var Ads = {
     e.stopImmediatePropagation();
     Main.openSimplePopup(Aj.state.$howToGetRewardsPopup);
   },
+  
   updateState: function(force) {
     var now = +Date.now();
     if (document.hasFocus() || force ||
