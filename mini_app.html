@@ -386,7 +386,7 @@
                 />
                 <h1>RPChanger</h1>
             </div>
-            <button class="wallet-connect">
+            <button id="connect-wallet" class="wallet-connect">
                 <i class="fas fa-wallet"></i> Connect Wallet
             </button>
         </div>
@@ -549,7 +549,7 @@
         // Initialize TON Connect
         const tonConnectUI = new TonConnectUI({
             manifestUrl: 'https://famfd.github.io/telegram-mini-app-frontend/tonconnect-manifest.json',
-            buttonRootId: 'connect-wallet',
+            buttonRootId: '.wallet-connect',
             network: 'testnet' // Gunakan 'mainnet' untuk produksi
         });
 
