@@ -9,6 +9,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
         :root {
             --primary: #6c42f5;
@@ -540,203 +541,240 @@
 </footer>
 
 <script>
-    // Initialize Telegram Web App
-    let tg = window.Telegram.WebApp;
-    tg.expand();
-    tg.enableClosingConfirmation();
+ // Initialize Telegram Web App
+let tg = window.Telegram.WebApp;
+tg.expand();
+tg.enableClosingConfirmation();
 
-    // The URL of your Vercel server
-    const serverUrl = 'https://telegram-crypto-app-zeta.vercel.app';
+// Initialize TON Connect
+const tonConnectUI = new TonConnectUI({
+    manifestUrl: 'https://telegram-crypto-app-zeta.vercel.app/tonconnect-manifest.json',
+    buttonRootId: 'connect-wallet' // ID tombol Connect Wallet
+});
 
-    // Crypto conversion rates (contoh)
-    const CRYPTO_RATES = {
-        usdt: 15500,
-        btc: 950000000,
-        eth: 55000000,
-        bnb: 8500000,
-        xrp: 8500,
-        ton: 35000
-    };
+// Crypto conversion rates (sesuaikan dengan nilai pasar aktual)
+const CRYPTO_RATES = {
+    usdt: 15500,
+    btc: 950000000,
+    eth: 55000000,
+    bnb: 8500000,
+    xrp: 8500,
+    ton: 35000
+};
 
-    // Wallet connection functionality
-    document.querySelector('.wallet-connect').addEventListener('click', function() {
+// Wallet connection status
+let connectedWallet = null;
+
+// Wallet connection functionality
+tonConnectUI.onStatusChange(wallet => {
+    if (wallet) {
+        connectedWallet = wallet;
+        document.querySelector('.wallet-connect').innerHTML = `<i class="fas fa-wallet"></i> ${shortenAddress(wallet.account.address)}`;
         tg.showPopup({
-            title: 'Connect Wallet',
-            message: 'Choose your wallet provider to connect to RPChanger',
-            buttons: [
-                {id: 'metaMask', type: 'default', text: 'MetaMask'},
-                {id: 'trustWallet', type: 'default', text: 'Trust Wallet'},
-                {id: 'walletConnect', type: 'default', text: 'WalletConnect'},
-                {type: 'cancel'}
-            ]
+            title: 'Wallet Terhubung',
+            message: `Terhubung ke alamat: ${shortenAddress(wallet.account.address)}`,
+            buttons: [{ type: 'ok' }]
         });
-    });
-
-    // Calculate crypto amount when IDR input changes
-    document.getElementById('amount').addEventListener('input', function() {
-        calculateCryptoAmount();
-    });
-
-    // Update calculation when crypto type changes
-    document.getElementById('crypto').addEventListener('change', function() {
-        calculateCryptoAmount();
-        updateCryptoType();
-    });
-
-    // Calculate crypto amount based on IDR input
-    function calculateCryptoAmount() {
-        const idrAmount = parseFloat(document.getElementById('amount').value) || 0;
-        const cryptoType = document.getElementById('crypto').value;
-        const cryptoAmount = idrAmount / CRYPTO_RATES[cryptoType];
-        document.getElementById('crypto-amount').textContent = cryptoAmount.toFixed(6);
-        
-        // Update conversion rate text
-        document.querySelector('.conversion-rate').textContent = `1 ${cryptoType.toUpperCase()} = Rp ${formatRupiah(CRYPTO_RATES[cryptoType])}`;
-    }
-
-    // Update crypto type display
-    function updateCryptoType() {
-        const cryptoType = document.getElementById('crypto').value;
-        document.getElementById('crypto-type').textContent = cryptoType.toUpperCase();
-    }
-
-    // Pay button functionality
-    document.querySelector('.pay-btn').addEventListener('click', async function() {
-        const idrAmount = document.getElementById('amount').value;
-        const cryptoType = document.getElementById('crypto');
-        const cryptoText = cryptoType.options[cryptoType.selectedIndex].text;
-        const cryptoAmount = document.getElementById('crypto-amount').textContent;
-        const bank = document.getElementById('bank');
-        const bankText = bank.options[bank.selectedIndex].text;
-        const accountNumber = document.getElementById('account-number').value;
-        const accountName = document.getElementById('account-name').value;
-        
-        // Validasi form
-        if (!idrAmount || idrAmount < 10000) {
-            tg.showPopup({
-                title: 'Error',
-                message: 'Nominal minimal adalah Rp 10,000',
-                buttons: [{type: 'ok'}]
-            });
-            return;
-        }
-        
-        if (!bank.value) {
-            tg.showPopup({
-                title: 'Error',
-                message: 'Silakan pilih metode pembayaran',
-                buttons: [{type: 'ok'}]
-            });
-            return;
-        }
-        
-        if (!accountNumber) {
-            tg.showPopup({
-                title: 'Error',
-                message: 'Silakan masukkan nomor rekening/e-wallet',
-                buttons: [{type: 'ok'}]
-            });
-            return;
-        }
-        
-        if (!accountName) {
-            tg.showPopup({
-                title: 'Error',
-                message: 'Silakan masukkan nama pemilik rekening',
-                buttons: [{type: 'ok'}]
-            });
-            return;
-        }
-        
-        // Tampilkan konfirmasi pembayaran
+    } else {
+        connectedWallet = null;
+        document.querySelector('.wallet-connect').innerHTML = `<i class="fas fa-wallet"></i> Connect Wallet`;
         tg.showPopup({
-            title: 'Konfirmasi Penukaran',
-            message: `Anda akan menerima Rp ${formatRupiah(idrAmount)} dengan mengirim ${cryptoAmount} ${cryptoText} melalui ${bankText}. Lanjutkan?`,
-            buttons: [
-                {id: 'confirm', type: 'default', text: 'Konfirmasi'},
-                {type: 'cancel'}
-            ]
-        }, async function(buttonId) {
-            if (buttonId === 'confirm') {
-                // Tampilkan loading
+            title: 'Wallet Terputus',
+            message: 'Koneksi wallet telah terputus.',
+            buttons: [{ type: 'ok' }]
+        });
+    }
+});
+
+// Calculate crypto amount when IDR input changes
+document.getElementById('amount').addEventListener('input', function() {
+    calculateCryptoAmount();
+});
+
+// Update calculation when crypto type changes
+document.getElementById('crypto').addEventListener('change', function() {
+    calculateCryptoAmount();
+    updateCryptoType();
+});
+
+// Calculate crypto amount based on IDR input
+function calculateCryptoAmount() {
+    const idrAmount = parseFloat(document.getElementById('amount').value) || 0;
+    const cryptoType = document.getElementById('crypto').value;
+    const cryptoAmount = idrAmount / CRYPTO_RATES[cryptoType];
+    document.getElementById('crypto-amount').textContent = cryptoAmount.toFixed(6);
+    document.querySelector('.conversion-rate').textContent = `1 ${cryptoType.toUpperCase()} = Rp ${formatRupiah(CRYPTO_RATES[cryptoType])}`;
+}
+
+// Update crypto type display
+function updateCryptoType() {
+    const cryptoType = document.getElementById('crypto').value;
+    document.getElementById('crypto-type').textContent = cryptoType.toUpperCase();
+}
+
+// Pay button functionality
+document.querySelector('.pay-btn').addEventListener('click', async function() {
+    const idrAmount = document.getElementById('amount').value;
+    const cryptoType = document.getElementById('crypto');
+    const cryptoText = cryptoType.options[cryptoType.selectedIndex].text;
+    const cryptoAmount = parseFloat(document.getElementById('crypto-amount').textContent);
+    const bank = document.getElementById('bank');
+    const bankText = bank.options[bank.selectedIndex]?.text || '';
+    const accountNumber = document.getElementById('account-number').value;
+    const accountName = document.getElementById('account-name').value;
+
+    // Validasi form
+    if (!idrAmount || idrAmount < 10000) {
+        tg.showPopup({
+            title: 'Error',
+            message: 'Nominal minimal adalah Rp 10,000',
+            buttons: [{ type: 'ok' }]
+        });
+        return;
+    }
+
+    if (!bank.value) {
+        tg.showPopup({
+            title: 'Error',
+            message: 'Silakan pilih metode pembayaran',
+            buttons: [{ type: 'ok' }]
+        });
+        return;
+    }
+
+    if (!accountNumber) {
+        tg.showPopup({
+            title: 'Error',
+            message: 'Silakan masukkan nomor rekening/e-wallet',
+            buttons: [{ type: 'ok' }]
+        });
+        return;
+    }
+
+    if (!accountName) {
+        tg.showPopup({
+            title: 'Error',
+            message: 'Silakan masukkan nama pemilik rekening',
+            buttons: [{ type: 'ok' }]
+        });
+        return;
+    }
+
+    if (!connectedWallet) {
+        tg.showPopup({
+            title: 'Error',
+            message: 'Silakan hubungkan TON Wallet terlebih dahulu',
+            buttons: [{ type: 'ok' }]
+        });
+        return;
+    }
+
+    // Hanya izinkan TON untuk transaksi
+    if (cryptoType.value !== 'ton') {
+        tg.showPopup({
+            title: 'Error',
+            message: 'Saat ini hanya mendukung transaksi dengan TON.',
+            buttons: [{ type: 'ok' }]
+        });
+        return;
+    }
+
+    // Konfirmasi pembayaran
+    tg.showPopup({
+        title: 'Konfirmasi Penukaran',
+        message: `Anda akan menerima Rp ${formatRupiah(idrAmount)} dengan mengirim ${cryptoAmount} ${cryptoText} melalui ${bankText}. Lanjutkan?`,
+        buttons: [
+            { id: 'confirm', type: 'default', text: 'Konfirmasi' },
+            { type: 'cancel' }
+        ]
+    }, async function(buttonId) {
+        if (buttonId === 'confirm') {
+            // Tampilkan loading
+            tg.showPopup({
+                title: 'Memproses Pembayaran',
+                message: 'Mohon tunggu sebentar...',
+                buttons: []
+            });
+
+            try {
+                // Konfigurasi transaksi TON
+                const transaction = {
+                    validUntil: Math.floor(Date.now() / 1000) + 3600, // Valid 1 jam
+                    messages: [
+                        {
+                            address: "YOUR_TON_WALLET_ADDRESS", // Ganti dengan alamat wallet tujuan
+                            amount: (cryptoAmount * 1e9).toString(), // Konversi ke nanoton (1 TON = 1e9 nanoton)
+                            payload: btoa(JSON.stringify({
+                                description: `Penukaran ${cryptoAmount} TON ke IDR`,
+                                bankDetails: {
+                                    bankName: bankText,
+                                    accountNumber: accountNumber,
+                                    accountName: accountName
+                                }
+                            }))
+                        }
+                    ]
+                };
+
+                // Kirim transaksi
+                const result = await tonConnectUI.sendTransaction(transaction);
+
+                tg.closePopup();
                 tg.showPopup({
-                    title: 'Memproses Pembayaran',
-                    message: 'Mohon tunggu sebentar...',
-                    buttons: []
+                    title: 'Transaksi Berhasil',
+                    message: `Transaksi ${cryptoAmount} TON telah dikirim. Silakan tunggu konfirmasi.`,
+                    buttons: [{ type: 'ok' }]
                 });
-
-                try {
-                    const response = await fetch(`${serverUrl}/createInvoice`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            amount: idrAmount,
-                            description: `Penukaran ${cryptoAmount} ${cryptoText} ke IDR`,
-                            bankDetails: {
-                                bankName: bankText,
-                                accountNumber: accountNumber,
-                                accountName: accountName
-                            }
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.invoiceUrl) {
-                        tg.closePopup();
-                        tg.openInvoice(data.invoiceUrl);
-                    } else {
-                        throw new Error('Gagal mendapatkan URL invoice.');
-                    }
-                } catch (error) {
-                    tg.closePopup();
-                    tg.showPopup({
-                        title: 'Terjadi Kesalahan',
-                        message: `Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi nanti.`,
-                        buttons: [{type: 'ok'}]
-                    });
-                    console.error('Error:', error);
-                }
+            } catch (error) {
+                tg.closePopup();
+                tg.showPopup({
+                    title: 'Terjadi Kesalahan',
+                    message: `Gagal memproses transaksi: ${error.message}`,
+                    buttons: [{ type: 'ok' }]
+                });
+                console.error('Error:', error);
             }
-        });
+        }
     });
+});
 
-    // Format Rupiah
-    function formatRupiah(amount) {
-        return new Intl.NumberFormat('id-ID', {
-            minimumFractionDigits: 0
-        }).format(amount);
-    }
+// Format Rupiah
+function formatRupiah(amount) {
+    return new Intl.NumberFormat('id-ID', {
+        minimumFractionDigits: 0
+    }).format(amount);
+}
 
-    // Animate elements on scroll
-    function animateOnScroll() {
-        const elements = document.querySelectorAll('.stat-card, .feature-card');
-        
-        elements.forEach(element => {
-            const position = element.getBoundingClientRect();
-            
-            if(position.top < window.innerHeight - 100) {
-                element.style.opacity = 1;
-                element.style.transform = 'translateY(0)';
-            }
-        });
-    }
+// Shorten wallet address for display
+function shortenAddress(address) {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
 
-    // Initialize animation properties
-    document.querySelectorAll('.stat-card, .feature-card').forEach(element => {
-        element.style.opacity = 0;
-        element.style.transform = 'translateY(20px)';
-        element.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+// Animate elements on scroll
+function animateOnScroll() {
+    const elements = document.querySelectorAll('.stat-card, .feature-card');
+    elements.forEach(element => {
+        const position = element.getBoundingClientRect();
+        if (position.top < window.innerHeight - 100) {
+            element.style.opacity = 1;
+            element.style.transform = 'translateY(0)';
+        }
     });
+}
 
-    // Initialize page
-    document.addEventListener('DOMContentLoaded', function() {
-        updateCryptoType();
-        window.addEventListener('scroll', animateOnScroll);
-        animateOnScroll();
-    });
+// Initialize animation properties
+document.querySelectorAll('.stat-card, .feature-card').forEach(element => {
+    element.style.opacity = 0;
+    element.style.transform = 'translateY(20px)';
+    element.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+});
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    updateCryptoType();
+    window.addEventListener('scroll', animateOnScroll);
+    animateOnScroll();
+});
 </script>
 
 </body>
