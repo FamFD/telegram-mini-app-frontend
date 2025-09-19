@@ -892,6 +892,7 @@ var Wallet = {
             modals: ['before'],
             notifications: [],
             returnStrategy: 'back'
+            
           },
           enableAndroidBackHandler: false,
           uiPreferences: {
@@ -5007,5 +5008,90 @@ var SimpleSpoiler = {
       dx: k * x,
       dy: k * y,
     };
+    // ==================================================
+// DIRECT PAYMENT FUNCTION
+// ==================================================
+
+var DirectPayment = {
+  init: function() {
+    Aj.onLoad(function(state) {
+      // Handle direct payment buttons
+      $(document).on('click.curPage', '.js-direct-payment', DirectPayment.eDirectPayment);
+    });
+  },
+
+  eDirectPayment: function(e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    
+    var amount = $(this).data('amount');
+    var toAddress = $(this).data('to-address');
+    
+    if (!amount || !toAddress) {
+      return showAlert("Invalid payment parameters");
+    }
+
+    showConfirm(
+      `You will receive ${amount} TON. Confirm payment?`,
+      function() {
+        DirectPayment.requestPayment(amount, toAddress);
+      },
+      "Confirm Payment"
+    );
+  },
+
+  requestPayment: function(amount, toAddress) {
+    const tonConnectUI = Aj.globalState.tonConnectUI;
+    
+    if (!tonConnectUI) {
+      return showAlert("Wallet not initialized");
+    }
+
+    // Jika wallet belum terkoneksi, buka modal
+    if (!tonConnectUI.connected) {
+      tonConnectUI.openModal();
+      
+      // Tunggu sampai wallet terkoneksi, lalu kirim transaksi
+      const unsubscribe = tonConnectUI.onStatusChange((wallet) => {
+        if (wallet && wallet.account) {
+          unsubscribe();
+          DirectPayment.sendTransaction(amount, toAddress);
+        }
+      });
+      return;
+    }
+
+    DirectPayment.sendTransaction(amount, toAddress);
+  },
+
+  sendTransaction: function(amount, toAddress) {
+    const tonConnectUI = Aj.globalState.tonConnectUI;
+    
+    const transaction = {
+      validUntil: Math.floor(Date.now() / 1000) + 3600,
+      messages: [
+        {
+          address: toAddress,
+          amount: (amount * 1000000000).toString(),
+        }
+      ]
+    };
+
+    console.log("Sending transaction:", transaction);
+    
+    tonConnectUI.sendTransaction(transaction)
+      .then((result) => {
+        console.log("Transaction successful:", result);
+        showAlert("Payment successful! Transaction completed.");
+      })
+      .catch((error) => {
+        console.error("Transaction failed:", error);
+        showAlert("Payment failed: " + error.message);
+      });
+  }
+};
+
+// Initialize DirectPayment module
+DirectPayment.init();
   }
 };
